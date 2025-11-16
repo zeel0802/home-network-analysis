@@ -1,4 +1,5 @@
 # Home Network Traffic Analysis & Threat Report
+**Live Dashboard:** [https://zeel0802.github.io/home-network-analysis/report.html]
 
 **Brief:** capture and analyze local network traffic (PCAP). Automatically extract top-talkers, protocol distribution, DNS queries, and suspicious connection heuristics. Generates a static interactive report (`docs/report.html`) that can be hosted on GitHub Pages.
 
