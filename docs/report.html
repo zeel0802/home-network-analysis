@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Home Network Traffic Analysis</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:20px;background:#f7fafc}
+  .wrap{max-width:1000px;margin:0 auto}
+  h1{text-align:center}
+  .row{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+  .card{background:#fff;padding:16px;border-radius:10px;box-shadow:0 6px 18px rgba(12,20,40,0.06);flex:1 1 320px}
+  canvas{max-width:100%}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:8px;border-bottom:1px solid #eee;text-align:left;font-size:0.9rem}
+  .suspicious{background:#fff6f6;border-left:4px solid #ff6b6b}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Home Network Traffic Analysis</h1>
+  <p style="text-align:center;color:#666">Interactive charts generated from <code>summary.json</code></p>
+
+  <div class="row">
+    <div class="card"><h3>Protocol Distribution</h3><canvas id="protoChart"></canvas></div>
+    <div class="card"><h3>Top Source IPs</h3><canvas id="srcChart"></canvas></div>
+  </div>
+
+  <div class="row">
+    <div class="card"><h3>Top Destination IPs</h3><canvas id="dstChart"></canvas></div>
+    <div class="card"><h3>Top DNS queries</h3><canvas id="dnsChart"></canvas></div>
+  </div>
+
+  <div class="card suspicious" style="margin-top:18px">
+    <h3>Suspicious Findings</h3>
+    <div id="suspiciousArea">Loading...</div>
+  </div>
+
+  <footer style="text-align:center;margin-top:20px;color:#888">Project • Home Network Traffic Analysis</footer>
+</div>
+
+<script>
+async function load() {
+  const r = await fetch("summary.json");
+  const data = await r.json();
+
+  function mk(id, labels, values, opts={}) {
+    new Chart(document.getElementById(id), {
+      type: opts.type || 'bar',
+      data: { labels, datasets: [{ label: opts.label || 'Count', data: values }] },
+      options: {
+        responsive:true,
+        plugins:{legend:{display:false}},
+        scales:{y:{beginAtZero:true}}
+      }
+    });
+  }
+
+  mk('protoChart', data.protocols.map(x=>x[0]), data.protocols.map(x=>x[1]), {label:'Packets', type:'pie'});
+  mk('srcChart', data.top_src.map(x=>x[0]), data.top_src.map(x=>x[1]), {label:'Packets'});
+  mk('dstChart', data.top_dst.map(x=>x[0]), data.top_dst.map(x=>x[1]), {label:'Packets'});
+  mk('dnsChart', data.top_dns.map(x=>x[0]), data.top_dns.map(x=>x[1]), {label:'Queries', type:'bar'});
+
+  // suspicious list
+  const sArea = document.getElementById('suspiciousArea');
+  if (!data.suspicious || data.suspicious.length === 0) {
+    sArea.innerHTML = "<p>No suspicious events found by heuristics.</p>";
+  } else {
+    let html = "<table><tr><th>Type</th><th>Source</th><th>Destination</th><th>Port</th><th>Count</th></tr>";
+    for (const s of data.suspicious) {
+      html += `<tr><td>${s.type}</td><td>${s.src||''}</td><td>${s.dst||''}</td><td>${s.dport||''}</td><td>${s.count||''}</td></tr>`;
+    }
+    html += "</table>";
+    sArea.innerHTML = html;
+  }
+}
+
+load().catch(e => {
+  document.getElementById('suspiciousArea').innerText = "Error loading summary.json: " + e;
+});
+</script>
+</body>
+</html>
